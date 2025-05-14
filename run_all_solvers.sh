@@ -304,7 +304,7 @@ run_interactive() {
   echo "TSP Solver Testing Framework"
   echo "============================"
   echo "1. Run all instances (sorted by size)"
-  echo "2. Run a single instance"
+  echo "2. Run a X amount of instances"
   echo ""
   read -p "Enter your choice (1/2): " choice
   
@@ -383,18 +383,39 @@ run_single_instance() {
   echo "Instance | Instance Size | Solver   | Tour Length | Runtime (seconds)" > "$SUMMARY_FILE"
   echo "---------|---------------|----------|-------------|------------------" >> "$SUMMARY_FILE"
 
-  # Ask user for instance path
-  echo "Enter the full path to the TSP instance file:"
-  read -p "Path: " instance_path
+  # Ask user for number of instances
+  echo "How many instances would you like to run?"
+  read -p "Number of instances: " num_instances
   
-  # Check if file exists
-  if [ ! -f "$instance_path" ]; then
-    echo "Error: File not found: $instance_path"
+  # Validate input
+  if ! [[ "$num_instances" =~ ^[0-9]+$ ]] || [ "$num_instances" -lt 1 ]; then
+    echo "Error: Please enter a valid positive number."
     exit 1
   fi
   
-  # Run solvers on the instance
-  run_solvers_on_instance "$instance_path"
+  # Collect paths for each instance
+  instance_paths=()
+  for ((i=1; i<=$num_instances; i++)); do
+    echo "Enter the full path to TSP instance file #$i:"
+    read -p "Path: " instance_path
+    
+    # Check if file exists
+    if [ ! -f "$instance_path" ]; then
+      echo "Error: File not found: $instance_path"
+      echo "Please try again."
+      ((i--))
+      continue
+    fi
+    
+    instance_paths+=("$instance_path")
+  done
+  
+  # Run solvers on each instance
+  echo "Processing $num_instances instances..."
+  for instance_path in "${instance_paths[@]}"; do
+    echo "Processing: $(basename "$instance_path")"
+    run_solvers_on_instance "$instance_path"
+  done
   
   # Generate a more readable summary report with detailed spacing
   generate_summary_report
